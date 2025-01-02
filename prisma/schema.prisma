@@ -3,8 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
 }
 
 model User {
@@ -12,78 +18,73 @@ model User {
   surname    String    @db.VarChar(225)
   name       String    @db.VarChar(225)
   patronymic String?   @db.VarChar(225)
-  login      String    @db.VarChar(55) @unique
+  login      String    @unique @db.VarChar(55)
   password   String    @db.VarChar(255)
   teacher    Teacher?
   student    Student?
-  tokens     Token[]
+  sessions   Session[] ?
 }
 
 model Teacher {
-  id       Int       @id @default(autoincrement())
-  userId   Int       @unique
-  user     User      @relation(fields: [userId], references: [id])
+  id       Int      @id
+  user     User     @relation(fields: [id], references: [id])
   subjects TeacherGroupSubject[]
 }
 
 model Student {
-  id         Int         @id @default(autoincrement())
-  userId     Int         @unique
-  user       User        @relation(fields: [userId], references: [id])
+  id         Int          @id @default(autoincrement())
+  userId     Int          @unique
   groupId    Int
-  group      Group       @relation(fields: [groupId], references: [id])
+  user       User         @relation(fields: [userId], references: [id])
+  group      Group        @relation(fields: [groupId], references: [id])
   attendance Attendance[]
 }
 
 model Group {
-  id              Int                  @id @default(autoincrement())
-  groupCode       String               @db.VarChar(15) @unique
+  id              Int                   @id @default(autoincrement())
+  groupCode       String                @unique @db.VarChar(15)
   yearOfEntry     Int
   students        Student[]
   teacherSubjects TeacherGroupSubject[]
-
-  Attendance Attendance[]
+  attendance      Attendance[]
+  teacherId       Int?
 }
 
 model Subject {
-  id             Int                  @id @default(autoincrement())
-  name           String               @db.VarChar(100)
+  id              Int                   @id @default(autoincrement())
+  name            String                @db.VarChar(100)
   teacherSubjects TeacherGroupSubject[]
   attendance      Attendance[]
 }
 
 model TeacherGroupSubject {
-  id         Int     @id @default(autoincrement())
-  teacherId  Int
-  teacher    Teacher @relation(fields: [teacherId], references: [id])
-  groupId    Int
-  group      Group   @relation(fields: [groupId], references: [id])
-  subjectId  Int
-  subject    Subject @relation(fields: [subjectId], references: [id])
+  id        Int     @id @default(autoincrement())
+  teacherId Int
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+  groupId   Int
+  group     Group   @relation(fields: [groupId], references: [id])
+  subjectId Int
+  subject   Subject @relation(fields: [subjectId], references: [id])
 }
 
 model Attendance {
-  id         Int               @id @default(autoincrement())
-  date       DateTime          @db.Date
-  status     AttendanceStatus
-  subjectId  Int
-  subject    Subject           @relation(fields: [subjectId], references: [id])
-  groupId    Int
-  group      Group             @relation(fields: [groupId], references: [id])
-  studentId  Int
-  student    Student           @relation(fields: [studentId], references: [id])
+  id        Int              @id @default(autoincrement())
+  date      DateTime         @db.Date
+  status    AttendanceStatus
+  subjectId Int
+  subject   Subject          @relation(fields: [subjectId], references: [id])
+  groupId   Int
+  group     Group            @relation(fields: [groupId], references: [id])
+  studentId Int
+  student   Student          @relation(fields: [studentId], references: [id])
 }
 
-model Token {
-  id         Int      @id @default(autoincrement())
-  value      String   @db.VarChar(255)
-  validUntil DateTime
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id])
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
+model Session {
+  id        Int      @id @default(autoincrement())
+  token     String   @db.VarChar(25)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime
+  updatedAt DateTime
+  expiresAt DateTime
 }
