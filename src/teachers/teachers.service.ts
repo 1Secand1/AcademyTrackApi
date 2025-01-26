@@ -77,7 +77,7 @@ export class TeachersService {
 
   remove(id: number) {
     return this.prisma.teacher.delete({
-      where: { id: id },
+      where: { id },
     });
   }
 }

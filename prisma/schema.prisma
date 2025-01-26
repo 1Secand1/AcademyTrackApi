@@ -13,16 +13,36 @@ enum AttendanceStatus {
   LATE
 }
 
+enum Role {
+  student
+  teacher
+  groupLeader
+  manager
+  admin
+}
+
 model User {
   id         Int       @id @default(autoincrement())
   surname    String    @db.VarChar(225)
   name       String    @db.VarChar(225)
   patronymic String?   @db.VarChar(225)
-  login      String    @unique @db.VarChar(55)
-  password   String    @db.VarChar(255)
+
+  roles      UserRole[]
+
   teacher    Teacher?
   student    Student?
-  sessions   Session[] ?
+  credentials Credentials?
+}
+
+model Credentials {
+  id        Int          @id @default(autoincrement())
+
+  login     String       @unique @db.VarChar(55)
+  password  String       @db.VarChar(255)
+  userId    Int          @unique
+  user      User         @relation(fields: [userId], references: [id])
+
+  sessions  Session[]
 }
 
 model Teacher {
@@ -35,6 +55,7 @@ model Student {
   id         Int          @id @default(autoincrement())
   userId     Int          @unique
   groupId    Int
+
   user       User         @relation(fields: [userId], references: [id])
   group      Group        @relation(fields: [groupId], references: [id])
   attendance Attendance[]
@@ -47,7 +68,6 @@ model Group {
   students        Student[]
   teacherSubjects TeacherGroupSubject[]
   attendance      Attendance[]
-  teacherId       Int?
 }
 
 model Subject {
@@ -81,10 +101,19 @@ model Attendance {
 
 model Session {
   id        Int      @id @default(autoincrement())
-  token     String   @db.VarChar(25)
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime
-  updatedAt DateTime
+  token     String   @unique @db.VarChar(255)
+  credentialsId Int
+  credentials   Credentials @relation(fields: [credentialsId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   expiresAt DateTime
+}
+
+
+model UserRole {
+  @@id([userId, role])
+
+  userId Int
+  role   Role
+  user   User @relation(fields: [userId], references: [id])
 }
