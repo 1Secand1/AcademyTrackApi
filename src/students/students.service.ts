@@ -36,7 +36,7 @@ export class StudentsService {
       );
     }
 
-    return await this.prisma.$transaction(async (prisma) => {
+    return this.prisma.$transaction(async (prisma) => {
       const user = await prisma.user.create({
         data: {
           name,
