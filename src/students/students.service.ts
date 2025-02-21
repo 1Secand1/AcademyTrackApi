@@ -74,8 +74,6 @@ export class StudentsService {
       },
     });
 
-    console.log(students);
-
     return students.map(({ user, group, ...student }) => ({
       id: student.id,
       ...group,
