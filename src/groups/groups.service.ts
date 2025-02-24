@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { PrismaService } from '../prisma.service';
@@ -7,10 +7,25 @@ import { PrismaService } from '../prisma.service';
 export class GroupsService {
   constructor(protected readonly prisma: PrismaService) {}
 
-  create(createGroupDto: CreateGroupDto) {
-    return this.prisma.group.create({
+  async create(createGroupDto: CreateGroupDto) {
+    const group = await this.prisma.group.create({
       data: createGroupDto,
+      include: {
+        students: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                surname: true,
+                patronymic: true,
+              },
+            },
+          },
+        },
+      },
     });
+
+    return this.formatResponse(group);
   }
 
   async findAll() {
@@ -30,19 +45,11 @@ export class GroupsService {
       },
     });
 
-    const formatedGroups = groups.map((group) => ({
-      ...group,
-      students: group.students.map(({ user, userId }) => ({
-        id: userId,
-        ...user,
-      })),
-    }));
-
-    return formatedGroups;
+    return groups.map(this.formatResponse);
   }
 
   async findOne(id: number) {
-    const groups = await this.prisma.group.findUnique({
+    const group = await this.prisma.group.findUnique({
       where: { id },
       include: {
         students: {
@@ -59,17 +66,17 @@ export class GroupsService {
       },
     });
 
-    return {
-      ...groups,
-      students: groups.students.map(({ user, userId }) => ({
-        id: userId,
-        ...user,
-      })),
-    };
+    if (!group) {
+      throw new NotFoundException(`Group with id ${id} not found`);
+    }
+
+    return this.formatResponse(group);
   }
 
   async update(id: number, updateGroupDto: UpdateGroupDto) {
-    const groups = await this.prisma.group.update({
+    await this.findOne(id);
+
+    const updatedGroup = await this.prisma.group.update({
       where: { id },
       data: updateGroupDto,
       include: {
@@ -87,18 +94,41 @@ export class GroupsService {
       },
     });
 
+    return this.formatResponse(updatedGroup);
+  }
+
+  async remove(id: number) {
+    await this.findOne(id);
+
+    const deletedGroup = await this.prisma.group.delete({
+      where: { id },
+      include: {
+        students: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                surname: true,
+                patronymic: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return this.formatResponse(deletedGroup);
+  }
+
+  private formatResponse(group: any) {
     return {
-      ...groups,
-      students: groups.students.map(({ user, userId }) => ({
+      id: group.id,
+      code: group.groupCode,
+      yearOfEntry: group.yearOfEntry,
+      students: group.students.map(({ user, userId }) => ({
         id: userId,
         ...user,
       })),
     };
-  }
-
-  remove(id: number) {
-    return this.prisma.group.delete({
-      where: { id },
-    });
   }
 }

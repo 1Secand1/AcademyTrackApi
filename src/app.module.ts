@@ -6,6 +6,12 @@ import { SubjectModule } from './subject/subject.module';
 import { TeachingAssignmentsModule } from './teaching-assignments/teaching-assignments.module';
 
 @Module({
-  imports: [TeachersModule, StudentsModule, GroupsModule, SubjectModule, TeachingAssignmentsModule],
+  imports: [
+    TeachersModule,
+    StudentsModule,
+    GroupsModule,
+    SubjectModule,
+    TeachingAssignmentsModule,
+  ],
 })
 export class AppModule {}
