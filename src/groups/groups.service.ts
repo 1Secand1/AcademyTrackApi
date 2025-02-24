@@ -68,11 +68,37 @@ export class GroupsService {
     };
   }
 
-  update(id: number, updateGroupDto: UpdateGroupDto) {
-    return `This action updates a #${id} group`;
+  async update(id: number, updateGroupDto: UpdateGroupDto) {
+    const groups = await this.prisma.group.update({
+      where: { id },
+      data: updateGroupDto,
+      include: {
+        students: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                surname: true,
+                patronymic: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      ...groups,
+      students: groups.students.map(({ user, userId }) => ({
+        id: userId,
+        ...user,
+      })),
+    };
   }
 
   remove(id: number) {
-    return `This action removes a #${id} group`;
+    return this.prisma.group.delete({
+      where: { id },
+    });
   }
 }
