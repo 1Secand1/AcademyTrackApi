@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
 import { PrismaService } from 'src/prisma.service';
@@ -9,11 +9,39 @@ export class TeachersService {
 
   // TODO заменить на юзер ДТО
   async create(createTeacherDto: CreateTeacherDto) {
-    const user = await this.prisma.user.create({
-      data: createTeacherDto,
+    const { name, patronymic, surname } = createTeacherDto;
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        name,
+        patronymic,
+        surname,
+      },
     });
 
-    return this.prisma.teacher.create({ data: { id: user.id } });
+    if (existingUser) {
+      throw new ConflictException(
+        'User with the same name, patronymic, and surname already exists',
+      );
+    }
+
+    return this.prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.create({
+        data: {
+          name,
+          patronymic,
+          surname,
+        },
+      });
+
+      const teachers = await prisma.teacher.create({
+        data: {
+          teacherId: user.userId,
+        },
+      });
+
+      return teachers;
+    });
   }
 
   async findAll() {
@@ -30,14 +58,14 @@ export class TeachersService {
     });
 
     return teachers.map(({ user, ...teacher }) => ({
-      id: teacher.id,
+      ...teacher,
       ...user,
     }));
   }
 
-  async findOne(id: number) {
+  async findOne(teacherId: number) {
     const teacher = await this.prisma.teacher.findUnique({
-      where: { id },
+      where: { teacherId },
       include: {
         user: {
           select: {
@@ -52,9 +80,9 @@ export class TeachersService {
     return { ...teacher, ...teacher.user, user: undefined };
   }
 
-  async update(id: number, updateTeacherDto: UpdateTeacherDto) {
+  async update(teacherId: number, updateTeacherDto: UpdateTeacherDto) {
     const teacher = await this.prisma.teacher.update({
-      where: { id },
+      where: { teacherId },
       data: {
         user: {
           update: updateTeacherDto,
@@ -63,7 +91,7 @@ export class TeachersService {
       include: {
         user: {
           select: {
-            id: true,
+            userId: true,
             name: true,
             surname: true,
             patronymic: true,
@@ -72,12 +100,14 @@ export class TeachersService {
       },
     });
 
+    console.log(teacher);
+
     return { ...teacher, ...teacher.user, user: undefined };
   }
 
-  remove(id: number) {
+  remove(teacherId: number) {
     return this.prisma.teacher.delete({
-      where: { id },
+      where: { teacherId },
     });
   }
 }

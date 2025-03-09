@@ -20,31 +20,31 @@ export class SubjectService {
     return this.prisma.subject.findMany();
   }
 
-  async findOne(id: number) {
+  async findOne(subjectId: number) {
     const subject = await this.prisma.subject.findUnique({
-      where: { id },
+      where: { subjectId },
     });
     if (!subject) {
-      throw new NotFoundException(`Subject with id ${id} not found`);
+      throw new NotFoundException(`Subject with id ${subjectId} not found`);
     }
     return subject;
   }
 
-  async update(id: number, updateSubjectDto: UpdateSubjectDto) {
-    await this.findOne(id);
+  async update(subjectId: number, updateSubjectDto: UpdateSubjectDto) {
+    await this.findOne(subjectId);
 
     const updatedSubject = await this.prisma.subject.update({
-      where: { id },
+      where: { subjectId },
       data: updateSubjectDto,
     });
     return updatedSubject;
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(subjectId: number) {
+    await this.findOne(subjectId);
 
     const deletedSubject = await this.prisma.subject.delete({
-      where: { id },
+      where: { subjectId },
     });
     return deletedSubject;
   }

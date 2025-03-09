@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  engineType    = "binary"
+  binaryTargets = ["native", "linux-musl"]
 }
 
 datasource db {
@@ -22,98 +24,93 @@ enum Role {
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
-  surname    String    @db.VarChar(225)
-  name       String    @db.VarChar(225)
-  patronymic String?   @db.VarChar(225)
+  userId      Int          @id @default(autoincrement()) @map("id")
+  surname     String       @db.VarChar(225)
+  name        String       @db.VarChar(225)
+  patronymic  String?      @db.VarChar(225)
 
-  roles      UserRole[]
-
-  teacher    Teacher?
-  student    Student?
+  roles       UserRole[]
+  teacher     Teacher?
+  student     Student?
   credentials Credentials?
 }
 
 model Credentials {
-  id        Int          @id @default(autoincrement())
-
-  login     String       @unique @db.VarChar(55)
-  password  String       @db.VarChar(255)
-  userId    Int          @unique
-  user      User         @relation(fields: [userId], references: [id])
-
-  sessions  Session[]
+  credentialsId Int       @id @default(autoincrement()) @map("id")
+  login         String    @unique @db.VarChar(55)
+  password      String    @db.VarChar(255)
+  userId        Int       @unique
+  user          User      @relation(fields: [userId], references: [userId])
+  sessions      Session[]
 }
 
 model Teacher {
-  id       Int      @id
-  user     User     @relation(fields: [id], references: [id])
-  subjects TeacherGroupSubject[]
+  teacherId   Int                   @id @map("id")
+  user        User                  @relation(fields: [teacherId], references: [userId])
+  subjects    TeacherGroupSubject[]
 }
 
 model Student {
-  id         Int          @id @default(autoincrement())
-  userId     Int          @unique
+  studentId  Int      @id @map("id")
   groupId    Int
 
-  user       User         @relation(fields: [userId], references: [id])
-  group      Group        @relation(fields: [groupId], references: [id])
+  user       User     @relation(fields: [studentId], references: [userId])
+  group      Group    @relation(fields: [groupId], references: [groupId])
   attendance Attendance[]
 }
 
 model Group {
-  id              Int                   @id @default(autoincrement())
-  groupCode       String                @unique @db.VarChar(15)
-  yearOfEntry     Int
-  students        Student[]
+  groupId     Int                   @id @default(autoincrement()) @map("id")
+  groupCode   String                @unique @db.VarChar(15)
+  yearOfEntry Int
+  students    Student[]
   teacherSubjects TeacherGroupSubject[]
-  attendance      Attendance[]
+  attendance  Attendance[]
 }
 
 model Subject {
-  id              Int                   @id @default(autoincrement())
-  name            String                @db.VarChar(100)
+  subjectId   Int                   @id @default(autoincrement()) @map("id")
+  name        String                @db.VarChar(100)
   teacherSubjects TeacherGroupSubject[]
-  attendance      Attendance[]
+  attendance  Attendance[]
 }
 
 model TeacherGroupSubject {
-  id        Int     @id @default(autoincrement())
-  teacherId Int
-  teacher   Teacher @relation(fields: [teacherId], references: [id])
-  groupId   Int
-  group     Group   @relation(fields: [groupId], references: [id])
-  subjectId Int
-  subject   Subject @relation(fields: [subjectId], references: [id])
+  teacherGroupSubjectId Int           @id @default(autoincrement()) @map("id")
+  teacherId   Int
+  teacher     Teacher               @relation(fields: [teacherId], references: [teacherId])
+  groupId     Int
+  group       Group                 @relation(fields: [groupId], references: [groupId])
+  subjectId   Int
+  subject     Subject               @relation(fields: [subjectId], references: [subjectId])
 }
 
 model Attendance {
-  id        Int              @id @default(autoincrement())
-  date      DateTime         @db.Date
-  status    AttendanceStatus
-  subjectId Int
-  subject   Subject          @relation(fields: [subjectId], references: [id])
-  groupId   Int
-  group     Group            @relation(fields: [groupId], references: [id])
-  studentId Int
-  student   Student          @relation(fields: [studentId], references: [id])
+  attendanceId Int                 @id @default(autoincrement()) @map("id")
+  date         DateTime            @db.Date
+  status       AttendanceStatus
+  subjectId    Int
+  subject      Subject             @relation(fields: [subjectId], references: [subjectId])
+  groupId      Int
+  group        Group               @relation(fields: [groupId], references: [groupId])
+  studentId    Int
+  student      Student             @relation(fields: [studentId], references: [studentId])
 }
 
 model Session {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique @db.VarChar(255)
+  sessionId     Int       @id @default(autoincrement()) @map("id")
+  token         String    @unique @db.VarChar(255)
   credentialsId Int
-  credentials   Credentials @relation(fields: [credentialsId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  expiresAt DateTime
+  credentials   Credentials  @relation(fields: [credentialsId], references: [credentialsId])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  expiresAt     DateTime
 }
 
-
 model UserRole {
-  @@id([userId, role])
-
   userId Int
   role   Role
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [userId])
+
+  @@id([userId, role])
 }

@@ -15,7 +15,7 @@ export class StudentsService {
     const { name, patronymic, surname, groupId } = createStudentDto;
 
     const groupExists = await this.prisma.group.findUnique({
-      where: { id: groupId },
+      where: { groupId },
     });
 
     if (!groupExists) {
@@ -47,7 +47,7 @@ export class StudentsService {
 
       const student = await prisma.student.create({
         data: {
-          userId: user.id,
+          studentId: user.userId,
           groupId,
         },
       });
@@ -61,6 +61,7 @@ export class StudentsService {
       include: {
         group: {
           select: {
+            groupId: true,
             groupCode: true,
           },
         },
@@ -74,16 +75,19 @@ export class StudentsService {
       },
     });
 
+    console.log(students);
+
     return students.map(({ user, group, ...student }) => ({
-      id: student.id,
+      studentId: student.studentId,
+      groupId: student.groupId,
       ...group,
       ...user,
     }));
   }
 
-  async findOne(id: number) {
+  async findOne(studentId: number) {
     const student = await this.prisma.student.findUnique({
-      where: { id },
+      where: { studentId },
       include: {
         user: {
           select: {
@@ -98,9 +102,9 @@ export class StudentsService {
     return { ...student, ...student.user, user: undefined };
   }
 
-  async update(id: number, updateStudentDto: UpdateStudentDto) {
+  async update(studentId: number, updateStudentDto: UpdateStudentDto) {
     const student = await this.prisma.student.update({
-      where: { id },
+      where: { studentId },
       data: {
         user: {
           update: updateStudentDto,
@@ -109,7 +113,7 @@ export class StudentsService {
       include: {
         user: {
           select: {
-            id: true,
+            userId: true,
             name: true,
             surname: true,
             patronymic: true,
@@ -121,9 +125,9 @@ export class StudentsService {
     return { ...student, ...student.user, user: undefined };
   }
 
-  remove(id: number) {
+  remove(studentId: number) {
     return this.prisma.student.delete({
-      where: { id },
+      where: { studentId },
     });
   }
 }

@@ -48,9 +48,9 @@ export class GroupsService {
     return groups.map(this.formatResponse);
   }
 
-  async findOne(id: number) {
+  async findOne(groupId: number) {
     const group = await this.prisma.group.findUnique({
-      where: { id },
+      where: { groupId },
       include: {
         students: {
           include: {
@@ -67,17 +67,17 @@ export class GroupsService {
     });
 
     if (!group) {
-      throw new NotFoundException(`Group with id ${id} not found`);
+      throw new NotFoundException(`Group with groupId ${groupId} not found`);
     }
 
     return this.formatResponse(group);
   }
 
-  async update(id: number, updateGroupDto: UpdateGroupDto) {
-    await this.findOne(id);
+  async update(groupId: number, updateGroupDto: UpdateGroupDto) {
+    await this.findOne(groupId);
 
     const updatedGroup = await this.prisma.group.update({
-      where: { id },
+      where: { groupId },
       data: updateGroupDto,
       include: {
         students: {
@@ -97,11 +97,11 @@ export class GroupsService {
     return this.formatResponse(updatedGroup);
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(groupId: number) {
+    await this.findOne(groupId);
 
     const deletedGroup = await this.prisma.group.delete({
-      where: { id },
+      where: { groupId },
       include: {
         students: {
           include: {
@@ -121,14 +121,6 @@ export class GroupsService {
   }
 
   private formatResponse(group: any) {
-    return {
-      id: group.id,
-      code: group.groupCode,
-      yearOfEntry: group.yearOfEntry,
-      students: group.students.map(({ user, userId }) => ({
-        id: userId,
-        ...user,
-      })),
-    };
+    return group;
   }
 }
