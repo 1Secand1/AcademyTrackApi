@@ -103,11 +103,19 @@ export class StudentsService {
   }
 
   async update(studentId: number, updateStudentDto: UpdateStudentDto) {
+    const { groupId, name, surname, patronymic } = updateStudentDto;
     const student = await this.prisma.student.update({
       where: { studentId },
       data: {
+        group: {
+          connect: { groupId: groupId },
+        },
         user: {
-          update: updateStudentDto,
+          update: {
+            name,
+            surname,
+            patronymic,
+          },
         },
       },
       include: {
@@ -122,7 +130,7 @@ export class StudentsService {
       },
     });
 
-    return { ...student, ...student.user, user: undefined };
+    return { ...student };
   }
 
   remove(studentId: number) {
