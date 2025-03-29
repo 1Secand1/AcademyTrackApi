@@ -4,6 +4,7 @@ import { StudentsModule } from './students/students.module';
 import { GroupsModule } from './groups/groups.module';
 import { SubjectModule } from './subject/subject.module';
 import { TeachingAssignmentsModule } from './teaching-assignments/teaching-assignments.module';
+import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { TeachingAssignmentsModule } from './teaching-assignments/teaching-assig
     GroupsModule,
     SubjectModule,
     TeachingAssignmentsModule,
+    ScheduleModule,
   ],
 })
 export class AppModule {}

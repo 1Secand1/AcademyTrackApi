@@ -36,11 +36,11 @@ model User {
 }
 
 model Credentials {
-  credentialsId Int       @id @default(autoincrement()) @map("id")
-  login         String    @unique @db.VarChar(55)
-  password      String    @db.VarChar(255)
-  userId        Int       @unique
-  user          User      @relation(fields: [userId], references: [userId])
+  credentialsId Int                 @id @default(autoincrement()) @map("id")
+  login         String              @unique @db.VarChar(55)
+  password      String              @db.VarChar(255)
+  userId        Int                 @unique
+  user          User                @relation(fields: [userId], references: [userId])
   sessions      Session[]
 }
 
@@ -51,21 +51,21 @@ model Teacher {
 }
 
 model Student {
-  studentId  Int      @id @map("id")
+  studentId  Int                    @id @map("id")
   groupId    Int
 
-  user       User     @relation(fields: [studentId], references: [userId])
-  group      Group    @relation(fields: [groupId], references: [groupId])
+  user       User                   @relation(fields: [studentId], references: [userId])
+  group      Group                  @relation(fields: [groupId], references: [groupId])
   attendance Attendance[]
 }
 
 model Group {
-  groupId     Int                   @id @default(autoincrement()) @map("id")
-  groupCode   String                @unique @db.VarChar(15)
-  yearOfEntry Int
-  students    Student[]
+  groupId         Int               @id @default(autoincrement()) @map("id")
+  groupCode       String            @unique @db.VarChar(15)
+  yearOfEntry     Int
+  students        Student[]
   teacherSubjects TeacherGroupSubject[]
-  attendance  Attendance[]
+  attendance      Attendance[]
 }
 
 model Subject {
@@ -83,6 +83,7 @@ model TeacherGroupSubject {
   group       Group                 @relation(fields: [groupId], references: [groupId])
   subjectId   Int
   subject     Subject               @relation(fields: [subjectId], references: [subjectId])
+  schedules   Schedule[]
 }
 
 model Attendance {
@@ -98,12 +99,12 @@ model Attendance {
 }
 
 model Session {
-  sessionId     Int       @id @default(autoincrement()) @map("id")
-  token         String    @unique @db.VarChar(255)
+  sessionId     Int                @id @default(autoincrement()) @map("id")
+  token         String             @unique @db.VarChar(255)
   credentialsId Int
-  credentials   Credentials  @relation(fields: [credentialsId], references: [credentialsId])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  credentials   Credentials        @relation(fields: [credentialsId], references: [credentialsId])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   expiresAt     DateTime
 }
 
@@ -113,4 +114,13 @@ model UserRole {
   user   User @relation(fields: [userId], references: [userId])
 
   @@id([userId, role])
+}
+
+model Schedule {
+  scheduleId             Int                   @id @default(autoincrement()) @map("id")
+  lessonNumber           Int
+  date                   String
+  teacherGroupSubjectId  Int
+
+  teacherGroupAssignment TeacherGroupSubject   @relation(fields: [teacherGroupSubjectId], references: [teacherGroupSubjectId])
 }
