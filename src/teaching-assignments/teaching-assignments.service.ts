@@ -109,18 +109,18 @@ export class TeachingAssignmentsService {
 
   private formatResponse(teachingAssignment: any) {
     return {
-      id: teachingAssignment.id,
+      teachingAssignmentId: teachingAssignment.teacherGroupSubjectId,
       teacher: {
-        id: teachingAssignment.teacher.id,
+        id: teachingAssignment.teacher.teacherId,
         name: teachingAssignment.teacher.user.name,
         surname: teachingAssignment.teacher.user.surname,
       },
       group: {
-        id: teachingAssignment.group.id,
+        id: teachingAssignment.group.groupId,
         code: teachingAssignment.group.groupCode,
       },
       subject: {
-        id: teachingAssignment.subject.id,
+        id: teachingAssignment.subject.subjectId,
         name: teachingAssignment.subject.name,
       },
     };
