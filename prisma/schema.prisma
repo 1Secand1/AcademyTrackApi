@@ -119,7 +119,7 @@ model UserRole {
 model Schedule {
   scheduleId             Int                   @id @default(autoincrement()) @map("id")
   lessonNumber           Int
-  date                   String
+  date                   DateTime
   teacherGroupSubjectId  Int
 
   teacherGroupAssignment TeacherGroupSubject   @relation(fields: [teacherGroupSubjectId], references: [teacherGroupSubjectId])
