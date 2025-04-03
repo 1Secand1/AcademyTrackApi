@@ -65,14 +65,12 @@ model Group {
   yearOfEntry     Int
   students        Student[]
   teacherSubjects TeacherGroupSubject[]
-  attendance      Attendance[]
 }
 
 model Subject {
   subjectId   Int                   @id @default(autoincrement()) @map("id")
   name        String                @db.VarChar(100)
   teacherSubjects TeacherGroupSubject[]
-  attendance  Attendance[]
 }
 
 model TeacherGroupSubject {
@@ -87,15 +85,12 @@ model TeacherGroupSubject {
 }
 
 model Attendance {
-  attendanceId Int                 @id @default(autoincrement()) @map("id")
-  date         DateTime            @db.Date
+  attendanceId Int        @id @default(autoincrement()) @map("id")
   status       AttendanceStatus
-  subjectId    Int
-  subject      Subject             @relation(fields: [subjectId], references: [subjectId])
-  groupId      Int
-  group        Group               @relation(fields: [groupId], references: [groupId])
+  scheduleId   Int
+  schedule     Schedule  @relation(fields: [scheduleId], references: [scheduleId])
   studentId    Int
-  student      Student             @relation(fields: [studentId], references: [studentId])
+  student      Student   @relation(fields: [studentId], references: [studentId])
 }
 
 model Session {
@@ -117,10 +112,11 @@ model UserRole {
 }
 
 model Schedule {
-  scheduleId             Int                   @id @default(autoincrement()) @map("id")
-  lessonNumber           Int
-  date                   DateTime
-  teacherGroupSubjectId  Int
+  scheduleId            Int                   @id @default(autoincrement()) @map("id")
+  lessonNumber          Int
+  date                  DateTime
+  teacherGroupSubjectId Int
+  teacherGroupSubject   TeacherGroupSubject   @relation(fields: [teacherGroupSubjectId], references: [teacherGroupSubjectId])
 
-  teacherGroupAssignment TeacherGroupSubject   @relation(fields: [teacherGroupSubjectId], references: [teacherGroupSubjectId])
+  attendances           Attendance[]
 }

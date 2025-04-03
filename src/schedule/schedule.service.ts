@@ -12,18 +12,27 @@ export class ScheduleService {
       data: {
         lessonNumber: createScheduleDto.lessonNumber,
         date: createScheduleDto.date,
-        teacherGroupAssignment: {
+        teacherGroupSubject: {
           connect: {
             teacherGroupSubjectId: createScheduleDto.teacherGroupSubjectId,
           },
         },
       },
       include: {
-        teacherGroupAssignment: {
+        teacherGroupSubject: {
           include: {
             teacher: { include: { user: true } },
             group: true,
             subject: true,
+          },
+        },
+        attendances: {
+          include: {
+            student: {
+              include: {
+                user: true,
+              },
+            },
           },
         },
       },
@@ -35,7 +44,7 @@ export class ScheduleService {
   async findAll() {
     const schedules = await this.prisma.schedule.findMany({
       include: {
-        teacherGroupAssignment: {
+        teacherGroupSubject: {
           include: {
             teacher: { include: { user: true } },
             group: true,
@@ -43,20 +52,55 @@ export class ScheduleService {
           },
         },
       },
+      orderBy: { date: 'asc' },
     });
 
-    return schedules.map(this.formatResponse);
+    if (!schedules.length) {
+      return [];
+    }
+
+    const groupedSchedules = schedules.reduce((acc, schedule) => {
+      const key = `${schedule.teacherGroupSubject.group.groupCode}|${schedule.teacherGroupSubject.teacher.user.surname} ${schedule.teacherGroupSubject.teacher.user.name} ${schedule.teacherGroupSubject.teacher.user.patronymic}|${schedule.teacherGroupSubject.subject.name}`;
+
+      if (!acc[key]) {
+        acc[key] = {
+          groupCode: schedule.teacherGroupSubject.group.groupCode,
+          teacherFullName: `${schedule.teacherGroupSubject.teacher.user.surname} ${schedule.teacherGroupSubject.teacher.user.name} ${schedule.teacherGroupSubject.teacher.user.patronymic}`,
+          subject: schedule.teacherGroupSubject.subject.name,
+          lessonsAttendance: [],
+        };
+      }
+
+      acc[key].lessonsAttendance.push({
+        lessonNumber: schedule.lessonNumber,
+        date: schedule.date.toISOString().split('T')[0],
+        status: 'planned',
+      });
+
+      return acc;
+    }, {});
+
+    return Object.values(groupedSchedules);
   }
 
   async findOne(scheduleId: number) {
     const schedule = await this.prisma.schedule.findUnique({
       where: { scheduleId },
       include: {
-        teacherGroupAssignment: {
+        teacherGroupSubject: {
           include: {
             teacher: { include: { user: true } },
             group: true,
             subject: true,
+          },
+        },
+        attendances: {
+          include: {
+            student: {
+              include: {
+                user: true,
+              },
+            },
           },
         },
       },
@@ -77,7 +121,7 @@ export class ScheduleService {
       data: {
         lessonNumber: updateScheduleDto.lessonNumber ?? undefined,
         date: updateScheduleDto.date ?? undefined,
-        teacherGroupAssignment: updateScheduleDto.teacherGroupSubjectId
+        teacherGroupSubject: updateScheduleDto.teacherGroupSubjectId
           ? {
               connect: {
                 teacherGroupSubjectId: updateScheduleDto.teacherGroupSubjectId,
@@ -86,11 +130,20 @@ export class ScheduleService {
           : undefined,
       },
       include: {
-        teacherGroupAssignment: {
+        teacherGroupSubject: {
           include: {
             teacher: { include: { user: true } },
             group: true,
             subject: true,
+          },
+        },
+        attendances: {
+          include: {
+            student: {
+              include: {
+                user: true,
+              },
+            },
           },
         },
       },
@@ -105,11 +158,20 @@ export class ScheduleService {
     const deletedSchedule = await this.prisma.schedule.delete({
       where: { scheduleId },
       include: {
-        teacherGroupAssignment: {
+        teacherGroupSubject: {
           include: {
             teacher: { include: { user: true } },
             group: true,
             subject: true,
+          },
+        },
+        attendances: {
+          include: {
+            student: {
+              include: {
+                user: true,
+              },
+            },
           },
         },
       },
@@ -120,15 +182,16 @@ export class ScheduleService {
 
   private formatResponse(schedule: any) {
     return {
-      scheduleId: schedule.scheduleId,
-      teacherId: schedule.teacherGroupAssignment.teacher.teacherId,
-      groupId: schedule.teacherGroupAssignment.group.groupId,
-      lessonNumber: schedule.lessonNumber,
-      teacherName: `${schedule.teacherGroupAssignment.teacher.user.name} ${schedule.teacherGroupAssignment.teacher.user.surname}`,
-      groupCode: schedule.teacherGroupAssignment.group.groupCode,
-      subjectId: schedule.teacherGroupAssignment.subject.subjectId,
-      subjectName: schedule.teacherGroupAssignment.subject.name,
-      date: schedule.date,
+      groupCode: schedule.teacherGroupSubject.group.groupCode,
+      teacherFullName: `${schedule.teacherGroupSubject.teacher.user.surname} ${schedule.teacherGroupSubject.teacher.user.name} ${schedule.teacherGroupSubject.teacher.user.patronymic}`,
+      subject: schedule.teacherGroupSubject.subject.name,
+      lessonsAttendance: [
+        {
+          lessonNumber: schedule.lessonNumber,
+          date: schedule.date.toISOString().split('T')[0],
+          status: 'planned',
+        },
+      ],
     };
   }
 }

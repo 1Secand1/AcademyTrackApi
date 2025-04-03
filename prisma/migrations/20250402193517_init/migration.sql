@@ -1,17 +1,8 @@
-/*
-  Warnings:
-
-  - You are about to drop the `teachers` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE');
 
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('student', 'teacher', 'groupLeader', 'manager', 'admin');
-
--- DropTable
-DROP TABLE "teachers";
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -42,8 +33,7 @@ CREATE TABLE "Teacher" (
 
 -- CreateTable
 CREATE TABLE "Student" (
-    "id" SERIAL NOT NULL,
-    "userId" INTEGER NOT NULL,
+    "id" INTEGER NOT NULL,
     "groupId" INTEGER NOT NULL,
 
     CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
@@ -79,10 +69,8 @@ CREATE TABLE "TeacherGroupSubject" (
 -- CreateTable
 CREATE TABLE "Attendance" (
     "id" SERIAL NOT NULL,
-    "date" DATE NOT NULL,
     "status" "AttendanceStatus" NOT NULL,
-    "subjectId" INTEGER NOT NULL,
-    "groupId" INTEGER NOT NULL,
+    "scheduleId" INTEGER NOT NULL,
     "studentId" INTEGER NOT NULL,
 
     CONSTRAINT "Attendance_pkey" PRIMARY KEY ("id")
@@ -108,14 +96,21 @@ CREATE TABLE "UserRole" (
     CONSTRAINT "UserRole_pkey" PRIMARY KEY ("userId","role")
 );
 
+-- CreateTable
+CREATE TABLE "Schedule" (
+    "id" SERIAL NOT NULL,
+    "lessonNumber" INTEGER NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "teacherGroupSubjectId" INTEGER NOT NULL,
+
+    CONSTRAINT "Schedule_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Credentials_login_key" ON "Credentials"("login");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Credentials_userId_key" ON "Credentials"("userId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Student_userId_key" ON "Student"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Group_groupCode_key" ON "Group"("groupCode");
@@ -130,7 +125,7 @@ ALTER TABLE "Credentials" ADD CONSTRAINT "Credentials_userId_fkey" FOREIGN KEY (
 ALTER TABLE "Teacher" ADD CONSTRAINT "Teacher_id_fkey" FOREIGN KEY ("id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Student" ADD CONSTRAINT "Student_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Student" ADD CONSTRAINT "Student_id_fkey" FOREIGN KEY ("id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Student" ADD CONSTRAINT "Student_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -145,10 +140,7 @@ ALTER TABLE "TeacherGroupSubject" ADD CONSTRAINT "TeacherGroupSubject_groupId_fk
 ALTER TABLE "TeacherGroupSubject" ADD CONSTRAINT "TeacherGroupSubject_subjectId_fkey" FOREIGN KEY ("subjectId") REFERENCES "Subject"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_subjectId_fkey" FOREIGN KEY ("subjectId") REFERENCES "Subject"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_scheduleId_fkey" FOREIGN KEY ("scheduleId") REFERENCES "Schedule"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -158,3 +150,6 @@ ALTER TABLE "Session" ADD CONSTRAINT "Session_credentialsId_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Schedule" ADD CONSTRAINT "Schedule_teacherGroupSubjectId_fkey" FOREIGN KEY ("teacherGroupSubjectId") REFERENCES "TeacherGroupSubject"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

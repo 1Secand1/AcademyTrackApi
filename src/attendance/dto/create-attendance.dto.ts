@@ -1,10 +1,4 @@
-import {
-  IsArray,
-  IsDateString,
-  IsEnum,
-  IsInt,
-  ValidateNested,
-} from 'class-validator';
+import { IsArray, IsInt, IsEnum, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AttendanceStatus } from '@prisma/client';
 
@@ -18,13 +12,7 @@ class StudentAttendanceDto {
 
 export class CreateAttendanceDto {
   @IsInt()
-  subjectId: number;
-
-  @IsInt()
-  groupId: number;
-
-  @IsDateString()
-  date: string;
+  scheduleId: number;
 
   @IsArray()
   @ValidateNested({ each: true })
