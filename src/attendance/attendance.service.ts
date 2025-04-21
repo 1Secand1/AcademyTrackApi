@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
@@ -17,31 +21,46 @@ export class AttendanceService {
       throw new NotFoundException(`Schedule with ID ${scheduleId} not found`);
     }
 
-    const createdAttendances = await Promise.all(
-      students.map((studentAttendance) =>
-        this.prisma.attendance.create({
-          data: {
-            schedule: { connect: { scheduleId } },
-            student: { connect: { studentId: studentAttendance.studentId } },
-            status: studentAttendance.status,
-          },
-          include: {
-            schedule: {
-              include: {
-                teacherGroupSubject: {
-                  include: {
-                    teacher: { include: { user: true } },
-                    group: true,
-                    subject: true,
-                  },
+    const createdAttendances = [];
+
+    for (const studentAttendance of students) {
+      const existing = await this.prisma.attendance.findFirst({
+        where: {
+          scheduleId,
+          studentId: studentAttendance.studentId,
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException(
+          `Attendance already exists for student ${studentAttendance.studentId} on schedule ${scheduleId}`,
+        );
+      }
+
+      const created = await this.prisma.attendance.create({
+        data: {
+          schedule: { connect: { scheduleId } },
+          student: { connect: { studentId: studentAttendance.studentId } },
+          status: studentAttendance.status,
+        },
+        include: {
+          schedule: {
+            include: {
+              teacherGroupSubject: {
+                include: {
+                  teacher: { include: { user: true } },
+                  group: true,
+                  subject: true,
                 },
               },
             },
-            student: { include: { user: true } },
           },
-        }),
-      ),
-    );
+          student: { include: { user: true } },
+        },
+      });
+
+      createdAttendances.push(created);
+    }
 
     const grouped = this.groupAttendances(createdAttendances);
     return Object.values(grouped).map((group) => this.formatResponse(group));

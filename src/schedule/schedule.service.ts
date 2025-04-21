@@ -59,28 +59,7 @@ export class ScheduleService {
       return [];
     }
 
-    const groupedSchedules = schedules.reduce((acc, schedule) => {
-      const key = `${schedule.teacherGroupSubject.group.groupCode}|${schedule.teacherGroupSubject.teacher.user.surname} ${schedule.teacherGroupSubject.teacher.user.name} ${schedule.teacherGroupSubject.teacher.user.patronymic}|${schedule.teacherGroupSubject.subject.name}`;
-
-      if (!acc[key]) {
-        acc[key] = {
-          groupCode: schedule.teacherGroupSubject.group.groupCode,
-          teacherFullName: `${schedule.teacherGroupSubject.teacher.user.surname} ${schedule.teacherGroupSubject.teacher.user.name} ${schedule.teacherGroupSubject.teacher.user.patronymic}`,
-          subject: schedule.teacherGroupSubject.subject.name,
-          lessonsAttendance: [],
-        };
-      }
-
-      acc[key].lessonsAttendance.push({
-        lessonNumber: schedule.lessonNumber,
-        date: schedule.date.toISOString().split('T')[0],
-        status: 'planned',
-      });
-
-      return acc;
-    }, {});
-
-    return Object.values(groupedSchedules);
+    return this.groupSchedules(schedules);
   }
 
   async findOne(scheduleId: number) {
@@ -94,15 +73,6 @@ export class ScheduleService {
             subject: true,
           },
         },
-        attendances: {
-          include: {
-            student: {
-              include: {
-                user: true,
-              },
-            },
-          },
-        },
       },
     });
 
@@ -110,7 +80,26 @@ export class ScheduleService {
       throw new NotFoundException(`Schedule with ID ${scheduleId} not found`);
     }
 
-    return this.formatResponse(schedule);
+    const schedules = await this.prisma.schedule.findMany({
+      where: {
+        teacherGroupSubject: {
+          teacherGroupSubjectId:
+            schedule.teacherGroupSubject.teacherGroupSubjectId,
+        },
+      },
+      include: {
+        teacherGroupSubject: {
+          include: {
+            teacher: { include: { user: true } },
+            group: true,
+            subject: true,
+          },
+        },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    return this.groupSchedules(schedules);
   }
 
   async update(scheduleId: number, updateScheduleDto: UpdateScheduleDto) {
@@ -193,5 +182,38 @@ export class ScheduleService {
         },
       ],
     };
+  }
+
+  private groupSchedules(schedules: any[]) {
+    const grouped = schedules.reduce(
+      (acc, schedule) => {
+        const groupCode = schedule.teacherGroupSubject.group.groupCode;
+        const teacher = schedule.teacherGroupSubject.teacher.user;
+        const subjectName = schedule.teacherGroupSubject.subject.name;
+
+        const key = `${groupCode}|${teacher.surname} ${teacher.name} ${teacher.patronymic}|${subjectName}`;
+
+        if (!acc[key]) {
+          acc[key] = {
+            groupCode,
+            teacherFullName: `${teacher.surname} ${teacher.name} ${teacher.patronymic}`,
+            subject: subjectName,
+            lessonsAttendance: [],
+          };
+        }
+
+        acc[key].lessonsAttendance.push({
+          lessonNumber: schedule.lessonNumber,
+          date: schedule.date.toISOString().split('T')[0],
+          status: 'planned',
+          scheduleId: schedule.scheduleId,
+        });
+
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
+
+    return Object.values(grouped);
   }
 }
