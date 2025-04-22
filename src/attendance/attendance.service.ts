@@ -237,7 +237,7 @@ export class AttendanceService {
       const fullName = `${att.student.user.surname} ${att.student.user.name} ${att.student.user.patronymic}`;
       const date = att.schedule.date.toISOString().split('T')[0];
       if (!map[studentId]) {
-        map[studentId] = { fullName, attendance: {} };
+        map[studentId] = { studentId, fullName, attendance: {} };
       }
       map[studentId].attendance[date] = att.status.toLowerCase();
       return map;
