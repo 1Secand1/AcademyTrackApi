@@ -1,12 +1,18 @@
-import { IsDateString, IsEnum, IsOptional } from 'class-validator';
+import { IsArray, IsEnum, IsInt, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { AttendanceStatus } from '@prisma/client';
 
-export class UpdateAttendanceDto {
-  @IsOptional()
-  @IsDateString()
-  date?: string;
+class StudentAttendanceUpdateDto {
+  @IsInt()
+  studentId: number;
 
-  @IsOptional()
   @IsEnum(AttendanceStatus)
-  status?: AttendanceStatus;
+  status: AttendanceStatus;
+}
+
+export class UpdateAttendanceDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => StudentAttendanceUpdateDto)
+  students: StudentAttendanceUpdateDto[];
 }

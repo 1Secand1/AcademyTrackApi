@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { TeachingAssignmentsService } from './teaching-assignments.service';
 import { CreateTeachingAssignmentDto } from './dto/create-teaching-assignment.dto';
@@ -23,8 +24,10 @@ export class TeachingAssignmentsController {
   }
 
   @Get()
-  findAll() {
-    return this.teachingAssignmentsService.findAll();
+  async findAll(@Query('teacherId') teacherId?: string) {
+    return this.teachingAssignmentsService.findAll(
+      teacherId ? Number(teacherId) : undefined,
+    );
   }
 
   @Get(':id')

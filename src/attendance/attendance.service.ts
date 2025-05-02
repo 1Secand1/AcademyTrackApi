@@ -66,8 +66,19 @@ export class AttendanceService {
     return Object.values(grouped).map((group) => this.formatResponse(group));
   }
 
-  async findAll() {
+  async findAll(groupId?: number) {
+    const whereCondition = groupId
+      ? {
+          schedule: {
+            teacherGroupSubject: {
+              groupId: groupId,
+            },
+          },
+        }
+      : {};
+
     const attendances = await this.prisma.attendance.findMany({
+      where: whereCondition,
       include: {
         schedule: {
           include: {
@@ -141,56 +152,58 @@ export class AttendanceService {
     return this.formatResponse(attendances);
   }
 
-  async update(attendanceId: number, updateAttendanceDto: UpdateAttendanceDto) {
-    await this.findOne(attendanceId);
+  async update(scheduleId: number, updateAttendanceDto: UpdateAttendanceDto) {
+    const { students } = updateAttendanceDto;
 
-    const updatedAttendance = await this.prisma.attendance.update({
-      where: { attendanceId },
-      data: {
-        status: updateAttendanceDto.status,
-      },
-      include: {
-        schedule: {
-          include: {
-            teacherGroupSubject: {
-              include: {
-                teacher: { include: { user: true } },
-                group: true,
-                subject: true,
+    const schedule = await this.prisma.schedule.findUnique({
+      where: { scheduleId },
+      include: { teacherGroupSubject: true },
+    });
+
+    if (!schedule) {
+      throw new NotFoundException(`Schedule with ID ${scheduleId} not found`);
+    }
+
+    const updatedAttendances = [];
+
+    for (const student of students) {
+      const existingAttendance = await this.prisma.attendance.findFirst({
+        where: {
+          scheduleId,
+          studentId: student.studentId,
+        },
+      });
+
+      if (!existingAttendance) {
+        throw new NotFoundException(
+          `Attendance not found for student ${student.studentId} and schedule ${scheduleId}`,
+        );
+      }
+
+      const updated = await this.prisma.attendance.update({
+        where: { attendanceId: existingAttendance.attendanceId },
+        data: { status: student.status },
+        include: {
+          schedule: {
+            include: {
+              teacherGroupSubject: {
+                include: {
+                  teacher: { include: { user: true } },
+                  group: true,
+                  subject: true,
+                },
               },
             },
           },
+          student: { include: { user: true } },
         },
-        student: { include: { user: true } },
-      },
-    });
+      });
 
-    const attendances = await this.prisma.attendance.findMany({
-      where: {
-        schedule: {
-          teacherGroupSubject: {
-            teacherGroupSubjectId:
-              updatedAttendance.schedule.teacherGroupSubject
-                .teacherGroupSubjectId,
-          },
-        },
-      },
-      include: {
-        schedule: {
-          include: {
-            teacherGroupSubject: {
-              include: {
-                teacher: { include: { user: true } },
-                group: true,
-                subject: true,
-              },
-            },
-          },
-        },
-        student: { include: { user: true } },
-      },
-    });
-    return this.formatResponse(attendances);
+      updatedAttendances.push(updated);
+    }
+
+    const grouped = this.groupAttendances(updatedAttendances);
+    return Object.values(grouped).map((group) => this.formatResponse(group));
   }
 
   async remove(attendanceId: number) {

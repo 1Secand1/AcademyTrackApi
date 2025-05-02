@@ -28,8 +28,11 @@ export class TeachingAssignmentsService {
     return this.formatResponse(teachingAssignment);
   }
 
-  async findAll() {
+  async findAll(teacherId?: number) {
+    const whereCondition = teacherId ? { teacherId } : {};
+
     const teachingAssignments = await this.prisma.teacherGroupSubject.findMany({
+      where: whereCondition,
       include: {
         teacher: { include: { user: true } },
         group: true,

@@ -6,6 +6,8 @@ import {
   Patch,
   Param,
   Delete,
+  ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
@@ -21,8 +23,10 @@ export class AttendanceController {
   }
 
   @Get()
-  findAll() {
-    return this.attendanceService.findAll();
+  async findAll(@Query('groupId') groupId?: string) {
+    return this.attendanceService.findAll(
+      groupId ? Number(groupId) : undefined,
+    );
   }
 
   @Get(':id')
@@ -30,12 +34,12 @@ export class AttendanceController {
     return this.attendanceService.findOne(+id);
   }
 
-  @Patch(':id')
+  @Patch(':scheduleId')
   update(
-    @Param('id') id: string,
+    @Param('scheduleId', ParseIntPipe) scheduleId: number,
     @Body() updateAttendanceDto: UpdateAttendanceDto,
   ) {
-    return this.attendanceService.update(+id, updateAttendanceDto);
+    return this.attendanceService.update(scheduleId, updateAttendanceDto);
   }
 
   @Delete(':id')
