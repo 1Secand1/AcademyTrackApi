@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
@@ -21,8 +22,10 @@ export class StudentsController {
   }
 
   @Get()
-  findAll() {
-    return this.studentsService.findAll();
+  findAll(@Query('teachingAssignmentId') teachingAssignmentId?: string) {
+    return this.studentsService.findAll(
+      teachingAssignmentId ? Number(teachingAssignmentId) : undefined
+    );
   }
 
   @Get(':id')

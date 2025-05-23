@@ -56,32 +56,35 @@ export class StudentsService {
     });
   }
 
-  async findAll() {
+  async findAll(teachingAssignmentId?: number) {
+    const whereCondition = teachingAssignmentId
+      ? {
+          group: {
+            teacherSubjects: {
+              some: {
+                teacherGroupSubjectId: teachingAssignmentId
+              }
+            }
+          }
+        }
+      : {};
+
     const students = await this.prisma.student.findMany({
+      where: whereCondition,
       include: {
-        group: {
-          select: {
-            groupId: true,
-            groupCode: true,
-          },
-        },
-        user: {
-          select: {
-            name: true,
-            surname: true,
-            patronymic: true,
-          },
-        },
-      },
+        user: true,
+        group: true
+      }
     });
 
-    console.log(students);
-
-    return students.map(({ user, group, ...student }) => ({
+    return students.map(student => ({
       studentId: student.studentId,
+      fullName: `${student.user.surname} ${student.user.name} ${student.user.patronymic || ''}`,
+      name: student.user.name,
+      surname: student.user.surname,
+      patronymic: student.user.patronymic,
       groupId: student.groupId,
-      ...group,
-      ...user,
+      groupCode: student.group.groupCode
     }));
   }
 

@@ -44,22 +44,29 @@ export class TeachersService {
     });
   }
 
-  async findAll() {
+  async findAll(groupId?: number) {
+    const whereCondition = groupId
+      ? {
+          subjects: {
+            some: {
+              groupId
+            }
+          }
+        }
+      : {};
+
     const teachers = await this.prisma.teacher.findMany({
+      where: whereCondition,
       include: {
-        user: {
-          select: {
-            name: true,
-            surname: true,
-            patronymic: true,
-          },
-        },
-      },
+        user: true
+      }
     });
 
-    return teachers.map(({ user, ...teacher }) => ({
-      ...teacher,
-      ...user,
+    return teachers.map(teacher => ({
+      teacherId: teacher.teacherId,
+      surname: teacher.user.surname,
+      name: teacher.user.name,
+      patronymic: teacher.user.patronymic
     }));
   }
 

@@ -1,18 +1,12 @@
-import { IsArray, IsEnum, IsInt, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
-import { AttendanceStatus } from '@prisma/client';
-
-class StudentAttendanceUpdateDto {
-  @IsInt()
-  studentId: number;
-
-  @IsEnum(AttendanceStatus)
-  status: AttendanceStatus;
-}
+import { IsInt } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateAttendanceDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => StudentAttendanceUpdateDto)
-  students: StudentAttendanceUpdateDto[];
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  scheduleId: number;
+
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  studentId: number;
 }

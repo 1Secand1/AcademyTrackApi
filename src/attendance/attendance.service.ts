@@ -2,80 +2,67 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
+import { GroupAttendanceSummaryDto, StudentAttendanceDto } from './dto/group-attendance-summary.dto';
 
 @Injectable()
 export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createAttendanceDto: CreateAttendanceDto) {
-    const { scheduleId, students } = createAttendanceDto;
+    const { scheduleId, studentId } = createAttendanceDto;
 
-    const scheduleExists = await this.prisma.schedule.findUnique({
+    const schedule = await this.prisma.schedule.findUnique({
       where: { scheduleId },
+      include: { group: true }
     });
-    if (!scheduleExists) {
-      throw new NotFoundException(`Schedule with ID ${scheduleId} not found`);
+
+    if (!schedule) {
+      throw new NotFoundException('Расписание не найдено');
     }
 
-    const createdAttendances = [];
+    const student = await this.prisma.student.findUnique({
+      where: { studentId },
+      include: { group: true }
+    });
 
-    for (const studentAttendance of students) {
-      const existing = await this.prisma.attendance.findFirst({
-        where: {
-          scheduleId,
-          studentId: studentAttendance.studentId,
-        },
-      });
+    if (!student) {
+      throw new NotFoundException('Студент не найден');
+    }
 
-      if (existing) {
-        throw new ConflictException(
-          `Attendance already exists for student ${studentAttendance.studentId} on schedule ${scheduleId}`,
-        );
+    if (student.groupId !== schedule.groupId) {
+      throw new BadRequestException('Студент не принадлежит к этой группе');
+    }
+
+    return this.prisma.attendance.create({
+      data: {
+        scheduleId,
+        studentId
       }
-
-      const created = await this.prisma.attendance.create({
-        data: {
-          schedule: { connect: { scheduleId } },
-          student: { connect: { studentId: studentAttendance.studentId } },
-          status: studentAttendance.status,
-        },
-        include: {
-          schedule: {
-            include: {
-              teacherGroupSubject: {
-                include: {
-                  teacher: { include: { user: true } },
-                  group: true,
-                  subject: true,
-                },
-              },
-            },
-          },
-          student: { include: { user: true } },
-        },
-      });
-
-      createdAttendances.push(created);
-    }
-
-    const grouped = this.groupAttendances(createdAttendances);
-    return Object.values(grouped).map((group) => this.formatResponse(group));
+    });
   }
 
-  async findAll(groupId?: number) {
-    const whereCondition = groupId
-      ? {
-          schedule: {
-            teacherGroupSubject: {
-              groupId: groupId,
-            },
-          },
-        }
-      : {};
+  async findAll(groupId?: number, teachingAssignmentId?: number) {
+    const whereCondition: any = {};
+
+    if (groupId) {
+      whereCondition.schedule = {
+        teacherGroupSubject: {
+          groupId: groupId,
+        },
+      };
+    }
+
+    if (teachingAssignmentId) {
+      whereCondition.schedule = {
+        ...whereCondition.schedule,
+        teacherGroupSubjectId: teachingAssignmentId,
+      };
+    }
 
     const attendances = await this.prisma.attendance.findMany({
       where: whereCondition,
@@ -152,58 +139,46 @@ export class AttendanceService {
     return this.formatResponse(attendances);
   }
 
-  async update(scheduleId: number, updateAttendanceDto: UpdateAttendanceDto) {
-    const { students } = updateAttendanceDto;
+  async update(attendanceId: number, updateAttendanceDto: UpdateAttendanceDto) {
+    const { scheduleId, studentId } = updateAttendanceDto;
+
+    const attendance = await this.prisma.attendance.findUnique({
+      where: { attendanceId }
+    });
+
+    if (!attendance) {
+      throw new NotFoundException('Запись о посещаемости не найдена');
+    }
 
     const schedule = await this.prisma.schedule.findUnique({
       where: { scheduleId },
-      include: { teacherGroupSubject: true },
+      include: { group: true }
     });
 
     if (!schedule) {
-      throw new NotFoundException(`Schedule with ID ${scheduleId} not found`);
+      throw new NotFoundException('Расписание не найдено');
     }
 
-    const updatedAttendances = [];
+    const student = await this.prisma.student.findUnique({
+      where: { studentId },
+      include: { group: true }
+    });
 
-    for (const student of students) {
-      const existingAttendance = await this.prisma.attendance.findFirst({
-        where: {
-          scheduleId,
-          studentId: student.studentId,
-        },
-      });
+    if (!student) {
+      throw new NotFoundException('Студент не найден');
+    }
 
-      if (!existingAttendance) {
-        throw new NotFoundException(
-          `Attendance not found for student ${student.studentId} and schedule ${scheduleId}`,
-        );
+    if (student.groupId !== schedule.groupId) {
+      throw new BadRequestException('Студент не принадлежит к этой группе');
+    }
+
+    return this.prisma.attendance.update({
+      where: { attendanceId },
+      data: {
+        scheduleId,
+        studentId
       }
-
-      const updated = await this.prisma.attendance.update({
-        where: { attendanceId: existingAttendance.attendanceId },
-        data: { status: student.status },
-        include: {
-          schedule: {
-            include: {
-              teacherGroupSubject: {
-                include: {
-                  teacher: { include: { user: true } },
-                  group: true,
-                  subject: true,
-                },
-              },
-            },
-          },
-          student: { include: { user: true } },
-        },
-      });
-
-      updatedAttendances.push(updated);
-    }
-
-    const grouped = this.groupAttendances(updatedAttendances);
-    return Object.values(grouped).map((group) => this.formatResponse(group));
+    });
   }
 
   async remove(attendanceId: number) {
@@ -252,7 +227,7 @@ export class AttendanceService {
       if (!map[studentId]) {
         map[studentId] = { studentId, fullName, attendance: {} };
       }
-      map[studentId].attendance[date] = att.status.toLowerCase();
+      map[studentId].attendance[date] = 'present';
       return map;
     }, {});
 
@@ -266,6 +241,75 @@ export class AttendanceService {
       lessonNumber,
       totalStudents: students.length,
       students,
+    };
+  }
+
+  async getGroupAttendanceSummary(groupId: number) {
+    const group = await this.prisma.group.findUnique({
+      where: { groupId },
+      include: {
+        students: {
+          include: {
+            user: true,
+            attendance: {
+              include: {
+                schedule: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!group) {
+      throw new NotFoundException('Группа не найдена');
+    }
+
+    const attendanceMap = new Map<number, {
+      student: { id: number; fullName: string };
+      attendance: Record<string, string>;
+      total: number;
+      present: number;
+    }>();
+
+    group.students.forEach(student => {
+      attendanceMap.set(student.studentId, {
+        student: {
+          id: student.studentId,
+          fullName: `${student.user.surname} ${student.user.name} ${student.user.patronymic || ''}`.trim()
+        },
+        attendance: {},
+        total: 0,
+        present: 0
+      });
+    });
+
+    group.students.forEach(student => {
+      student.attendance.forEach(att => {
+        const date = att.schedule.date.toISOString().split('T')[0];
+        const map = attendanceMap.get(student.studentId);
+        if (map) {
+          map.attendance[date] = 'present';
+          map.total++;
+          map.present++;
+        }
+      });
+    });
+
+    const summary = Array.from(attendanceMap.values()).map(item => ({
+      student: item.student,
+      attendance: item.attendance,
+      percentage: item.total > 0 ? Math.round((item.present / item.total) * 100) : 0
+    }));
+
+    return {
+      groupId: group.groupId,
+      groupCode: group.groupCode,
+      totalStudents: group.students.length,
+      averageAttendance: summary.length > 0
+        ? Math.round(summary.reduce((acc, curr) => acc + curr.percentage, 0) / summary.length)
+        : 0,
+      students: summary
     };
   }
 }

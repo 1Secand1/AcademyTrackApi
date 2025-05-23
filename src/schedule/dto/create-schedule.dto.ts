@@ -1,14 +1,21 @@
-import { IsDate, IsInt, IsNumber } from 'class-validator';
+import { IsDate, IsInt, IsOptional, IsPositive } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateScheduleDto {
   @IsInt()
+  @IsPositive()
+  teacherGroupSubjectId: number;
+
+  @IsInt()
+  @IsPositive()
   lessonNumber: number;
 
   @Type(() => Date)
   @IsDate()
   date: Date;
 
-  @IsNumber()
-  teacherGroupSubjectId: number;
+  @IsInt()
+  @IsPositive()
+  @IsOptional()
+  timeSlot?: number;
 }
