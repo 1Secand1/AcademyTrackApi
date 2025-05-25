@@ -148,6 +148,11 @@ export class TeachingAssignmentsService {
   async remove(teacherGroupSubjectId: number) {
     await this.findOne(teacherGroupSubjectId);
 
+    // Сначала удаляем все связанные записи из расписания
+    await this.prisma.schedule.deleteMany({
+      where: { teacherGroupSubjectId }
+    });
+
     const deletedTeachingAssignment =
       await this.prisma.teacherGroupSubject.delete({
         where: { teacherGroupSubjectId },
