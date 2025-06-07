@@ -7,7 +7,10 @@ import {
 import { PrismaService } from '../prisma.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
-import { GroupAttendanceSummaryDto, StudentAttendanceDto } from './dto/group-attendance-summary.dto';
+import {
+  GroupAttendanceSummaryDto,
+  StudentAttendanceDto,
+} from './dto/group-attendance-summary.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -18,7 +21,7 @@ export class AttendanceService {
 
     const schedule = await this.prisma.schedule.findUnique({
       where: { scheduleId },
-      include: { group: true }
+      include: { group: true },
     });
 
     if (!schedule) {
@@ -27,7 +30,7 @@ export class AttendanceService {
 
     const student = await this.prisma.student.findUnique({
       where: { studentId },
-      include: { group: true }
+      include: { group: true },
     });
 
     if (!student) {
@@ -41,8 +44,8 @@ export class AttendanceService {
     return this.prisma.attendance.create({
       data: {
         scheduleId,
-        studentId
-      }
+        studentId,
+      },
     });
   }
 
@@ -143,7 +146,7 @@ export class AttendanceService {
     const { scheduleId, studentId } = updateAttendanceDto;
 
     const attendance = await this.prisma.attendance.findUnique({
-      where: { attendanceId }
+      where: { attendanceId },
     });
 
     if (!attendance) {
@@ -152,7 +155,7 @@ export class AttendanceService {
 
     const schedule = await this.prisma.schedule.findUnique({
       where: { scheduleId },
-      include: { group: true }
+      include: { group: true },
     });
 
     if (!schedule) {
@@ -161,7 +164,7 @@ export class AttendanceService {
 
     const student = await this.prisma.student.findUnique({
       where: { studentId },
-      include: { group: true }
+      include: { group: true },
     });
 
     if (!student) {
@@ -176,8 +179,8 @@ export class AttendanceService {
       where: { attendanceId },
       data: {
         scheduleId,
-        studentId
-      }
+        studentId,
+      },
     });
   }
 
@@ -253,39 +256,43 @@ export class AttendanceService {
             user: true,
             attendance: {
               include: {
-                schedule: true
-              }
-            }
-          }
-        }
-      }
+                schedule: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!group) {
       throw new NotFoundException('Группа не найдена');
     }
 
-    const attendanceMap = new Map<number, {
-      student: { id: number; fullName: string };
-      attendance: Record<string, string>;
-      total: number;
-      present: number;
-    }>();
+    const attendanceMap = new Map<
+      number,
+      {
+        student: { studentId: number; fullName: string };
+        attendance: Record<string, string>;
+        total: number;
+        present: number;
+      }
+    >();
 
-    group.students.forEach(student => {
+    group.students.forEach((student) => {
       attendanceMap.set(student.studentId, {
         student: {
-          id: student.studentId,
-          fullName: `${student.user.surname} ${student.user.name} ${student.user.patronymic || ''}`.trim()
+          studentId: student.studentId,
+          fullName:
+            `${student.user.surname} ${student.user.name} ${student.user.patronymic || ''}`.trim(),
         },
         attendance: {},
         total: 0,
-        present: 0
+        present: 0,
       });
     });
 
-    group.students.forEach(student => {
-      student.attendance.forEach(att => {
+    group.students.forEach((student) => {
+      student.attendance.forEach((att) => {
         const date = att.schedule.date.toISOString().split('T')[0];
         const map = attendanceMap.get(student.studentId);
         if (map) {
@@ -296,20 +303,25 @@ export class AttendanceService {
       });
     });
 
-    const summary = Array.from(attendanceMap.values()).map(item => ({
+    const summary = Array.from(attendanceMap.values()).map((item) => ({
       student: item.student,
       attendance: item.attendance,
-      percentage: item.total > 0 ? Math.round((item.present / item.total) * 100) : 0
+      percentage:
+        item.total > 0 ? Math.round((item.present / item.total) * 100) : 0,
     }));
 
     return {
       groupId: group.groupId,
       groupCode: group.groupCode,
       totalStudents: group.students.length,
-      averageAttendance: summary.length > 0
-        ? Math.round(summary.reduce((acc, curr) => acc + curr.percentage, 0) / summary.length)
-        : 0,
-      students: summary
+      averageAttendance:
+        summary.length > 0
+          ? Math.round(
+              summary.reduce((acc, curr) => acc + curr.percentage, 0) /
+                summary.length,
+            )
+          : 0,
+      students: summary,
     };
   }
 }

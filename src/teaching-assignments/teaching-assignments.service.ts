@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { CreateTeachingAssignmentDto } from './dto/create-teaching-assignment.dto';
 import { UpdateTeachingAssignmentDto } from './dto/update-teaching-assignment.dto';
 import { PrismaService } from '../prisma.service';
@@ -14,8 +18,8 @@ export class TeachingAssignmentsService {
         where: {
           groupId: createTeachingAssignmentDto.groupId,
           subjectId: createTeachingAssignmentDto.subjectId,
-          semester: createTeachingAssignmentDto.semester || 1
-        }
+          semester: createTeachingAssignmentDto.semester || 1,
+        },
       });
 
       if (existing) {
@@ -31,7 +35,7 @@ export class TeachingAssignmentsService {
           subject: {
             connect: { subjectId: createTeachingAssignmentDto.subjectId },
           },
-          semester: createTeachingAssignmentDto.semester || 1
+          semester: createTeachingAssignmentDto.semester || 1,
         },
         include: {
           teacher: { include: { user: true } },
@@ -96,14 +100,17 @@ export class TeachingAssignmentsService {
       await this.findOne(teacherGroupSubjectId);
 
       // Проверка на существование такого назначения при обновлении
-      if (updateTeachingAssignmentDto.groupId && updateTeachingAssignmentDto.subjectId) {
+      if (
+        updateTeachingAssignmentDto.groupId &&
+        updateTeachingAssignmentDto.subjectId
+      ) {
         const existing = await this.prisma.teacherGroupSubject.findFirst({
           where: {
             groupId: updateTeachingAssignmentDto.groupId,
             subjectId: updateTeachingAssignmentDto.subjectId,
             semester: updateTeachingAssignmentDto.semester || 1,
-            teacherGroupSubjectId: { not: teacherGroupSubjectId }
-          }
+            teacherGroupSubjectId: { not: teacherGroupSubjectId },
+          },
         });
 
         if (existing) {
@@ -116,15 +123,19 @@ export class TeachingAssignmentsService {
           where: { teacherGroupSubjectId },
           data: {
             teacher: updateTeachingAssignmentDto.teacherId
-              ? { connect: { teacherId: updateTeachingAssignmentDto.teacherId } }
+              ? {
+                  connect: { teacherId: updateTeachingAssignmentDto.teacherId },
+                }
               : undefined,
             group: updateTeachingAssignmentDto.groupId
               ? { connect: { groupId: updateTeachingAssignmentDto.groupId } }
               : undefined,
             subject: updateTeachingAssignmentDto.subjectId
-              ? { connect: { subjectId: updateTeachingAssignmentDto.subjectId } }
+              ? {
+                  connect: { subjectId: updateTeachingAssignmentDto.subjectId },
+                }
               : undefined,
-            semester: updateTeachingAssignmentDto.semester
+            semester: updateTeachingAssignmentDto.semester,
           },
           include: {
             teacher: { include: { user: true } },
@@ -150,7 +161,7 @@ export class TeachingAssignmentsService {
 
     // Сначала удаляем все связанные записи из расписания
     await this.prisma.schedule.deleteMany({
-      where: { teacherGroupSubjectId }
+      where: { teacherGroupSubjectId },
     });
 
     const deletedTeachingAssignment =
@@ -174,19 +185,19 @@ export class TeachingAssignmentsService {
         code: teachingAssignment.group.groupCode,
         course: teachingAssignment.group.yearOfEntry,
         specialty: teachingAssignment.group.groupCode.split('-')[0],
-        numberOfStudents: teachingAssignment.group.students?.length || 0
+        numberOfStudents: teachingAssignment.group.students?.length || 0,
       },
       subject: {
         subjectId: teachingAssignment.subject.subjectId,
-        name: teachingAssignment.subject.name
+        name: teachingAssignment.subject.name,
       },
       teacher: {
         teacherId: teachingAssignment.teacher.teacherId,
         surname: teachingAssignment.teacher.user.surname,
         name: teachingAssignment.teacher.user.name,
-        patronymic: teachingAssignment.teacher.user.patronymic
+        patronymic: teachingAssignment.teacher.user.patronymic,
       },
-      semester: teachingAssignment.semester
+      semester: teachingAssignment.semester,
     };
   }
 }

@@ -11,7 +11,13 @@ import {
 import { TeachingAssignmentsService } from './teaching-assignments.service';
 import { CreateTeachingAssignmentDto } from './dto/create-teaching-assignment.dto';
 import { UpdateTeachingAssignmentDto } from './dto/update-teaching-assignment.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 @ApiTags('teaching-assignments')
 @Controller('teaching-assignments')
@@ -23,7 +29,10 @@ export class TeachingAssignmentsController {
   @ApiOperation({ summary: 'Создать новое назначение преподавателя' })
   @ApiResponse({ status: 201, description: 'Назначение успешно создано' })
   @ApiResponse({ status: 400, description: 'Неверные данные' })
-  @ApiResponse({ status: 404, description: 'Преподаватель, группа или предмет не найдены' })
+  @ApiResponse({
+    status: 404,
+    description: 'Преподаватель, группа или предмет не найдены',
+  })
   @ApiResponse({ status: 409, description: 'Такое назначение уже существует' })
   @Post()
   create(@Body() createTeachingAssignmentDto: CreateTeachingAssignmentDto) {
@@ -32,7 +41,11 @@ export class TeachingAssignmentsController {
 
   @ApiOperation({ summary: 'Получить все назначения преподавателей' })
   @ApiResponse({ status: 200, description: 'Список назначений' })
-  @ApiQuery({ name: 'teacherId', required: false, description: 'ID преподавателя для фильтрации' })
+  @ApiQuery({
+    name: 'teacherId',
+    required: false,
+    description: 'ID преподавателя для фильтрации',
+  })
   @Get()
   async findAll(@Query('teacherId') teacherId?: string) {
     return this.teachingAssignmentsService.findAll(

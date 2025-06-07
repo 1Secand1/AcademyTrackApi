@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { PrismaService } from '../prisma.service';
@@ -39,7 +44,9 @@ export class GroupsService {
         throw new ConflictException('Group with this code already exists');
       }
       if (error.code === 'P2000') {
-        throw new BadRequestException('Group code is too long (maximum 15 characters)');
+        throw new BadRequestException(
+          'Group code is too long (maximum 15 characters)',
+        );
       }
       throw error;
     }
@@ -140,7 +147,8 @@ export class GroupsService {
   private formatStudent(student: any) {
     return {
       id: student.studentId,
-      fullName: `${student.user.surname} ${student.user.name} ${student.user.patronymic || ''}`.trim(),
+      fullName:
+        `${student.user.surname} ${student.user.name} ${student.user.patronymic || ''}`.trim(),
     };
   }
 
@@ -185,26 +193,28 @@ export class GroupsService {
       specialty: group.specialty || '',
       course: group.course || 1,
       yearOfEntry: group.yearOfEntry,
-      students: group.students.map(student => ({
+      students: group.students.map((student) => ({
         id: student.studentId,
-        fullName: `${student.user.surname} ${student.user.name} ${student.user.patronymic || ''}`.trim(),
+        fullName:
+          `${student.user.surname} ${student.user.name} ${student.user.patronymic || ''}`.trim(),
       })),
-      teachers: group.teacherSubjects.map(ts => ({
+      teachers: group.teacherSubjects.map((ts) => ({
         id: ts.teacher.teacherId,
-        fullName: `${ts.teacher.user.surname} ${ts.teacher.user.name} ${ts.teacher.user.patronymic || ''}`.trim(),
-        subjects: ts.teacher.subjects.map(s => ({
+        fullName:
+          `${ts.teacher.user.surname} ${ts.teacher.user.name} ${ts.teacher.user.patronymic || ''}`.trim(),
+        subjects: ts.teacher.subjects.map((s) => ({
           id: s.subject.subjectId,
           name: s.subject.name,
           semester: s.semester,
         })),
         roles: ['teacher'],
       })),
-      subjects: group.teacherSubjects.map(ts => ({
+      subjects: group.teacherSubjects.map((ts) => ({
         id: ts.subject.subjectId,
         name: ts.subject.name,
         semester: ts.semester,
       })),
-      teachingAssignments: group.teacherSubjects.map(ts => ({
+      teachingAssignments: group.teacherSubjects.map((ts) => ({
         id: ts.teacherGroupSubjectId,
         teacherId: ts.teacherId,
         subjectId: ts.subjectId,
@@ -270,17 +280,18 @@ export class GroupsService {
 
     // Group teachers by teacherId to avoid duplicates
     const teachersMap = new Map();
-    
-    group.teacherSubjects.forEach(ts => {
+
+    group.teacherSubjects.forEach((ts) => {
       const teacher = ts.teacher;
       if (!teachersMap.has(teacher.teacherId)) {
         teachersMap.set(teacher.teacherId, {
           id: teacher.teacherId,
-          fullName: `${teacher.user.surname} ${teacher.user.name} ${teacher.user.patronymic || ''}`.trim(),
+          fullName:
+            `${teacher.user.surname} ${teacher.user.name} ${teacher.user.patronymic || ''}`.trim(),
           subjects: [],
         });
       }
-      
+
       const teacherData = teachersMap.get(teacher.teacherId);
       teacherData.subjects.push({
         id: ts.subject.subjectId,
@@ -315,7 +326,7 @@ export class GroupsService {
       throw new NotFoundException(`Group with ID ${groupId} not found`);
     }
 
-    const students = group.students.map(student => {
+    const students = group.students.map((student) => {
       const totalLessons = student.attendance.length;
       const attendancePercentage = totalLessons > 0 ? 100 : 0;
 
