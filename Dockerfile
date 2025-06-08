@@ -24,11 +24,11 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Debug: Show the contents of the dist directory
-RUN echo "=== Contents of /app/dist ===" && ls -Rla dist/
+# Make the entrypoint script executable
+RUN chmod +x docker-entrypoint.sh
 
 # Expose the port the app runs on
 EXPOSE 3000
 
 # Command to run the application
-CMD ["node", "dist/src/main.js"] 
+CMD ["./docker-entrypoint.sh"] 
