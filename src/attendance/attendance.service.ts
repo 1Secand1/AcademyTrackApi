@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { CreateAttendanceDto } from './dto/create-attendance.dto';
+import { CreateAttendanceDto, AttendanceStatus } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import {
   GroupAttendanceSummaryDto,
@@ -17,35 +17,53 @@ export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createAttendanceDto: CreateAttendanceDto) {
-    const { scheduleId, studentId } = createAttendanceDto;
+    const { scheduleId, students } = createAttendanceDto;
 
+    // Проверяем существование расписания
     const schedule = await this.prisma.schedule.findUnique({
       where: { scheduleId },
-      include: { group: true },
+      include: {
+        teacherGroupSubject: {
+          include: {
+            group: true
+          }
+        }
+      }
     });
 
     if (!schedule) {
-      throw new NotFoundException('Расписание не найдено');
+      throw new NotFoundException(`Schedule with ID ${scheduleId} not found`);
     }
 
-    const student = await this.prisma.student.findUnique({
-      where: { studentId },
-      include: { group: true },
+    const groupId = schedule.teacherGroupSubject.group.groupId;
+
+    // Проверяем, что все студенты принадлежат к группе
+    const studentIds = students.map(s => s.studentId);
+    const studentsInGroup = await this.prisma.student.findMany({
+      where: {
+        studentId: { in: studentIds },
+        groupId: groupId
+      }
     });
 
-    if (!student) {
-      throw new NotFoundException('Студент не найден');
+    if (studentsInGroup.length !== studentIds.length) {
+      throw new BadRequestException('Some students do not belong to the specified group');
     }
 
-    if (student.groupId !== schedule.groupId) {
-      throw new BadRequestException('Студент не принадлежит к этой группе');
-    }
+    // Удаляем существующие записи посещаемости для этого расписания
+    await this.prisma.attendance.deleteMany({
+      where: { scheduleId }
+    });
 
-    return this.prisma.attendance.create({
-      data: {
-        scheduleId,
-        studentId,
-      },
+    // Создаем новые записи посещаемости
+    const attendanceRecords = students.map(student => ({
+      scheduleId,
+      studentId: student.studentId,
+      status: student.status
+    }));
+
+    return this.prisma.attendance.createMany({
+      data: attendanceRecords
     });
   }
 

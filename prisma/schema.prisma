@@ -82,6 +82,7 @@ model Attendance {
   attendanceId Int              @id @default(autoincrement()) @map("id")
   scheduleId   Int
   studentId    Int
+  status       AttendanceStatus @default(PRESENT)
   schedule     Schedule         @relation(fields: [scheduleId], references: [scheduleId])
   student      Student          @relation(fields: [studentId], references: [studentId])
 }
@@ -122,4 +123,10 @@ model Schedule {
 enum Role {
   teacher
   admin
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
 }
