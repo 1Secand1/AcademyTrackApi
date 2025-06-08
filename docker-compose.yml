@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/academytrack?schema=public
       - NODE_ENV=production
@@ -14,12 +14,16 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - academytrack-network
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.academytrack-api.rule=Host(`api.academytrack.com`)"
+      - "traefik.http.routers.academytrack-api.entrypoints=websecure"
+      - "traefik.http.routers.academytrack-api.tls.certResolver=letsencrypt"
+      - "traefik.http.services.academytrack-api.loadbalancer.server.port=3000"
 
   postgres:
     image: postgres:15-alpine
-    ports:
-      - "5433:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -32,11 +36,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - academytrack-network
+      - dokploy-network
 
 networks:
-  academytrack-network:
-    driver: bridge
+  dokploy-network:
+    external: true
 
 volumes:
   postgres_data: 

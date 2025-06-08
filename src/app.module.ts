@@ -7,6 +7,7 @@ import { TeachingAssignmentsModule } from './teaching-assignments/teaching-assig
 import { ScheduleModule } from './schedule/schedule.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AuthModule } from './auth/auth.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -19,5 +20,6 @@ import { AuthModule } from './auth/auth.module';
     ScheduleModule,
     AttendanceModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}
