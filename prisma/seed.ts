@@ -26,14 +26,14 @@ async function main() {
       credentials: {
         create: {
           login: 'admin',
-          password: await bcrypt.hash('admin123', 10),
+          password: await bcrypt.hash('Admin@2024', 10),
         },
       },
     },
   });
 
-  // Создаем преподавателей
-  const teacher1 = await prisma.user.create({
+  // Создаем преподавателя
+  const teacher = await prisma.user.create({
     data: {
       surname: 'Иванов',
       name: 'Иван',
@@ -43,31 +43,20 @@ async function main() {
       },
       credentials: {
         create: {
-          login: 'teacher1',
-          password: await bcrypt.hash('teacher1', 10),
+          login: 'teacher',
+          password: await bcrypt.hash('Teacher@2024', 10),
         },
       },
     },
   });
 
-  const teacher2 = await prisma.user.create({
-    data: {
-      surname: 'Петров',
-      name: 'Петр',
-      patronymic: 'Петрович',
-      roles: {
-        create: [{ role: Role.teacher }],
-      },
-      credentials: {
-        create: {
-          login: 'teacher2',
-          password: await bcrypt.hash('teacher2', 10),
-        },
-      },
-    },
-  });
-
-  console.log('✅ База данных успешно заполнена тестовыми данными');
+  console.log('✅ База данных успешно заполнена начальными пользователями');
+  console.log('👤 Администратор:');
+  console.log('   Логин: admin');
+  console.log('   Пароль: Admin@2024');
+  console.log('👤 Преподаватель:');
+  console.log('   Логин: teacher');
+  console.log('   Пароль: Teacher@2024');
 }
 
 main()
