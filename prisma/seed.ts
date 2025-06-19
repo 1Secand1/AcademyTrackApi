@@ -8,8 +8,15 @@ async function main() {
 
   // Очищаем базу данных
   await prisma.session.deleteMany();
+  await prisma.attendance.deleteMany();
+  await prisma.teacherGroupSubject.deleteMany();
+  await prisma.schedule.deleteMany();
   await prisma.userRole.deleteMany();
   await prisma.credentials.deleteMany();
+  await prisma.teacher.deleteMany();
+  await prisma.student.deleteMany();
+  await prisma.group.deleteMany();
+  await prisma.subject.deleteMany();
   await prisma.user.deleteMany();
 
   console.log('👤 Создаем пользователей...');
